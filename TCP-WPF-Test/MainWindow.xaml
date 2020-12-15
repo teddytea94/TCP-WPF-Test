@@ -1,0 +1,15 @@
+﻿<Window x:Class="TCP_WPF_Test.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:TCP_WPF_Test"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <TextBox Name="UserTB" HorizontalAlignment="Left" Height="37" Margin="42,52,0,0" TextWrapping="Wrap" Text="Username" VerticalAlignment="Top" Width="184"/>
+        <Button Content="Login" HorizontalAlignment="Left" Height="27" Margin="42,211,0,0" VerticalAlignment="Top" Width="158" Click="Button_Test"/>
+        <TextBox Name="PassTB" HorizontalAlignment="Left" Height="35" Margin="42,94,0,0" TextWrapping="Wrap" Text="Password" VerticalAlignment="Top" Width="184"/>
+
+    </Grid>
+</Window>
