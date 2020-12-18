@@ -29,7 +29,7 @@ namespace TCP_WPF_Test
         public MainWindow()
         {
             InitializeComponent();
-
+            //client = new TcpClient(hostName, portNum);
             //ConnectToTCP();
         }
 
@@ -103,6 +103,7 @@ namespace TCP_WPF_Test
 
         private bool Login_Click()
         {
+            client = new TcpClient(hostName, portNum);
             bool loginsuccess = false;
             string dbName = "QAD DB";
 
@@ -137,83 +138,104 @@ namespace TCP_WPF_Test
                 string routingresult = TCPresponse;
                 Step steptest = new Step();
                 Debug.Print("Routing Result: " + routingresult);
-                steptest.ReadfromQAD(routingresult);
-                Debug.Print(steptest.RoutingCode);
-                client.Close();
+                if (routingresult != "")
+                {
+                    steptest.ReadfromQAD(routingresult);
+                    Debug.Print(steptest.RoutingCode);
+                }
+                Thread.Sleep(1000);
+                byte[] quitmsg = Encoding.ASCII.GetBytes("_QUIT_");
+                SendCmd(quitmsg);
             }
             else
             {
                 Debug.Print("Can't Login.");
             }
 
+            
+            client.Close();
             return loginsuccess;
         }
 
         private bool SendCmd(byte[] msg)
         {
-            client = new TcpClient(hostName, portNum);
             bool TCPwriteSuccess = false;
             TCPresponse = "";
             CmdResponse = false;
             CmdMessage = "";
             CmdCodes = "";
             bool TCPreadSuccess = false;
-            byte[] bytes = new byte[1024];
+            byte[] bytes = new byte[8192];
+
+
             if (client.Connected)
             {
                 NetworkStream ns = client.GetStream();
                 ns.WriteTimeout = 3000;
                 ns.ReadTimeout = 3000;
-                ns.Write(msg, 0, msg.Length);
-                TCPwriteSuccess = true;
-
-                if (TCPwriteSuccess == true)
+                try
                 {
-                    Debug.WriteLine("Sent. Awaiting Response.");
-                    Thread.Sleep(200);
-                    // Possible issues: 
-                    // Data is too long
-                    // 200 ms may not be long enough
-                    // Client disconnect
-                    int bytesRead = ns.Read(bytes, 0, bytes.Length);
-                    Debug.WriteLine("Response: " + Encoding.ASCII.GetString(bytes, 0, bytesRead));
-                    TCPresponse = Encoding.ASCII.GetString(bytes, 0, bytesRead);
-                    if (TCPresponse == "")
+                    ns.Write(msg, 0, msg.Length);
+                    TCPwriteSuccess = true;
+
+                    if (TCPwriteSuccess == true)
                     {
+                        Debug.WriteLine("Sent. Awaiting Response.");
+                        Thread.Sleep(200);
+                        // Possible issues: 
+                        // Data is too long
+                        // 200 ms may not be long enough
+                        // Client disconnect
+                        //int bytesRead = ns.Read(bytes, 0, bytes.Length);
+
+                        if (ns.DataAvailable)
+                        {
+                            int bytesRead = ns.Read(bytes, 0, bytes.Length);
+                            Debug.WriteLine("Response: " + Encoding.ASCII.GetString(bytes, 0, bytesRead));
+                            TCPresponse = Encoding.ASCII.GetString(bytes, 0, bytesRead);
+                            if (TCPresponse == "")
+                            {
+                                return false;
+                            }
+                            if (TCPresponse.Contains("\t"))
+                            {
+                                int TabPos = TCPresponse.IndexOf("\t");
+                                if (TCPresponse.Substring(TCPresponse.Length - 1, 1) == "\n")
+                                {
+                                    TCPresponse = TCPresponse.Substring(0, TCPresponse.Length - 1);
+                                }
+                                if (TCPresponse.Contains("true"))
+                                {
+                                    CmdResponse = true;
+                                }
+                                TCPreadSuccess = true;
+                                string vStr = TCPresponse.Substring(TabPos + 1); //from Tab position to end
+                                int vPos = vStr.IndexOf(ETX);
+                                if (vPos > 0)
+                                {
+                                    CmdMessage = vStr.Substring(0, vPos - 1);
+                                    CmdCodes = vStr.Substring(vPos + 1);
+                                }
+                                else
+                                {
+                                    CmdMessage = vStr;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        ns.Close();
                         return false;
                     }
-                    if (TCPresponse.Contains("\t"))
-                    {
-                        int TabPos = TCPresponse.IndexOf("\t");
-                        if (TCPresponse.Substring(TCPresponse.Length - 1, 1) == "\n")
-                        {
-                            TCPresponse = TCPresponse.Substring(0, TCPresponse.Length - 1);
-                        }
-                        if (TCPresponse.Contains("true"))
-                        {
-                            CmdResponse = true;
-                        }
-                        TCPreadSuccess = true;
-                        string vStr = TCPresponse.Substring(TabPos + 1); //from Tab position to end
-                        int vPos = vStr.IndexOf(ETX);
-                        if (vPos > 0)
-                        {
-                            CmdMessage = vStr.Substring(0, vPos - 1);
-                            CmdCodes = vStr.Substring(vPos + 1);
-                        }
-                        else
-                        {
-                            CmdMessage = vStr;
-                        }
-
-                    }
-
                 }
-                else
+                catch
                 {
-                    return false;
+                    ns.Close();
+                    Debug.Print("Disconnected.");
                 }
             }
+
             //client.Close();
             return TCPreadSuccess;
         }
@@ -247,7 +269,7 @@ namespace TCP_WPF_Test
 
             Debug.WriteLine("Response: " + Encoding.ASCII.GetString(bytes, 0, bytesRead));
 
-            client.Close();
+
 
 
         }
