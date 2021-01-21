@@ -7,9 +7,27 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-        <TextBox Name="UserTB" HorizontalAlignment="Left" Height="37" Margin="42,52,0,0" TextWrapping="Wrap" Text="Username" VerticalAlignment="Top" Width="184"/>
+        <!--<TextBox Name="UserTB" HorizontalAlignment="Left" Height="37" Margin="42,52,0,0" TextWrapping="Wrap" Text="Username" VerticalAlignment="Top" Width="184"/>
         <Button Content="Login" HorizontalAlignment="Left" Height="27" Margin="42,211,0,0" VerticalAlignment="Top" Width="158" Click="Button_Test"/>
-        <TextBox Name="PassTB" HorizontalAlignment="Left" Height="35" Margin="42,94,0,0" TextWrapping="Wrap" Text="Password" VerticalAlignment="Top" Width="184"/>
+        <TextBox Name="PassTB" HorizontalAlignment="Left" Height="35" Margin="42,94,0,0" TextWrapping="Wrap" Text="Password" VerticalAlignment="Top" Width="184"/>-->
+        <StackPanel>
+            <StackPanel.DataContext>
+                <local:LoginViewModel></local:LoginViewModel>
+            </StackPanel.DataContext>
+            <TextBlock Height="23" HorizontalAlignment="Left" Name="UserTB" Text="QAD Username" VerticalAlignment="Top" Width="148" />
+            <TextBox Height="23" HorizontalAlignment="Left" Name="textBoxEmail" Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Top" Width="247" />
+            <TextBlock Height="23" HorizontalAlignment="Left" Name="textBlock2" Text="Password" VerticalAlignment="Top" Width="77" />
+            <PasswordBox Height="23" HorizontalAlignment="Left" Name="PassTB" VerticalAlignment="Top" Width="247"/>
+            <TextBlock Height="20" Text="{Binding CurrentError}" Foreground="Red"></TextBlock>
+            <TextBlock Height="20" Text="{Binding Message}" Foreground="Green"></TextBlock>
+            <Button Content="Login" Height="23" HorizontalAlignment="Left" Name="button1" VerticalAlignment="Top" Width="100" Command="{Binding LoginCommand}" CommandParameter="{Binding ElementName=PassTB}" IsDefault="True"/>
 
+            <Button Width="100" Height="30" Content="Login as Operator" HorizontalAlignment="Left" ></Button>
+            <!--<TextBlock Height="23" HorizontalAlignment="Left" x:Name ="errormessage" VerticalAlignment="Top" Width="247" Margin="118,253,0,0"  OpacityMask="Crimson" Foreground="#FFE5572C"  />-->
+
+        </StackPanel>
+        <StackPanel VerticalAlignment="Bottom">
+            <Button Click="Button_Test" Height="20" Content="Original Login"></Button>
+        </StackPanel>
     </Grid>
 </Window>

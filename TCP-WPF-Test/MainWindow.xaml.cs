@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
+//using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
+//using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -16,6 +16,10 @@ using System.Net.Sockets;
 using System.Diagnostics;
 using System.Net;
 using System.Threading;
+using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
+using System.Security.Principal;
+using System.Windows.Controls;
 
 namespace TCP_WPF_Test
 {
@@ -25,16 +29,19 @@ namespace TCP_WPF_Test
     public partial class MainWindow : Window
     {
         //AsynchronousClient asyncClient = new AsynchronousClient();
-
+        LoginViewModel loginViewModel;
         public MainWindow()
         {
             InitializeComponent();
             //client = new TcpClient(hostName, portNum);
             //ConnectToTCP();
+            loginViewModel = (LoginViewModel)this.DataContext;
         }
 
         private const int portNum = 11000;
         private const string hostName = "127.0.0.1";
+        //private const int portNum = 26606;
+        //private const string hostName = "naqad51.corp.lairdtech.com";
         const char STX = '\u0002';
         const char ETX = '\u0003';
         public TcpClient client;
@@ -114,7 +121,7 @@ namespace TCP_WPF_Test
             }
 
             string qadprogram = "ttromt02.p";
-            string runoptions = "SetUser" + "\t" + UserTB.Text + "\t" + PassTB.Text + "\t" + "14.13.1";
+            string runoptions = "SetUser" + "\t" + UserTB.Text + "\t" + PassTB.Password + "\t" + "14.13.1";
             string fullmsgstr = "_RUN_" + STX + qadprogram + ETX + runoptions + "\n";
 
             byte[] msg = Encoding.ASCII.GetBytes(fullmsgstr);
@@ -122,7 +129,7 @@ namespace TCP_WPF_Test
             if (SendCmd(msg) && CmdResponse == true)
             {
                 string qadprogram2 = "ttdbname.p";
-                string runoptions2 = UserTB.Text + "\t" + PassTB.Text + "\t" + "14.13.1";
+                string runoptions2 = UserTB.Text + "\t" + PassTB.Password + "\t" + "14.13.1";
                 string fullmsgstr2 = "_RUN_" + STX + qadprogram2 + STX + runoptions2 + "\n";
                 byte[] msg2 = Encoding.ASCII.GetBytes(fullmsgstr2);
                 SendCmd(msg2);
@@ -136,12 +143,26 @@ namespace TCP_WPF_Test
                 SendCmd(msg3);
                 Thread.Sleep(1000);
                 string routingresult = TCPresponse;
-                Step steptest = new Step();
+
                 Debug.Print("Routing Result: " + routingresult);
                 if (routingresult != "")
                 {
-                    steptest.ReadfromQAD(routingresult);
-                    Debug.Print(steptest.RoutingCode);
+                    List<Step> steplist = new List<Step>();
+                    String[] split2steps = routingresult.Split('\u0014');
+                    foreach (string eachstep in split2steps)
+                    {
+                        Debug.Print("Parsing Steps.");
+                        if (eachstep != "" && !eachstep.Contains("\u0003") && !eachstep.Contains("\u0002"))
+                        {
+                            Step steptest = new Step();
+                            steptest.ReadfromQAD(eachstep);
+                            steplist.Add(steptest);
+                            Debug.WriteLine(steptest.Operation);
+                            Debug.WriteLine(steptest.Comments);
+                        }
+                    }
+                    Debug.Print(split2steps.Count().ToString());
+                    
                 }
                 Thread.Sleep(1000);
                 byte[] quitmsg = Encoding.ASCII.GetBytes("_QUIT_");
@@ -156,7 +177,6 @@ namespace TCP_WPF_Test
             client.Close();
             return loginsuccess;
         }
-
         private bool SendCmd(byte[] msg)
         {
             bool TCPwriteSuccess = false;
@@ -246,34 +266,293 @@ namespace TCP_WPF_Test
             //asyncClient.SendData(UserTB.Text + "<EOF>");
             Login_Click();
         }
-        private void Button_Click1(object sender, RoutedEventArgs e)
+        //private void Button_Click1(object sender, RoutedEventArgs e)
+        //{
+        //    byte[] bytes = new byte[1024];
+
+        //    IPHostEntry host = Dns.GetHostEntry("localhost");
+        //    IPAddress ipAddress = host.AddressList[0];
+        //    IPAddress ip2 = IPAddress.Parse("127.0.0.1");
+        //    IPEndPoint remoteEP = new IPEndPoint(ipAddress, 11000);
+
+        //    byte[] msg = Encoding.ASCII.GetBytes(UserTB.Text + "\t" + "<EOF>");
+
+        //    var client = new TcpClient(host.AddressList[0].ToString(), portNum);
+
+        //    NetworkStream ns = client.GetStream();
+        //    ns.WriteTimeout = 3000;
+        //    ns.ReadTimeout = 3000;
+        //    ns.Write(msg, 0, msg.Length);
+
+        //    Debug.WriteLine("Sent. Awaiting Response.");
+        //    int bytesRead = ns.Read(bytes, 0, bytes.Length);
+
+        //    Debug.WriteLine("Response: " + Encoding.ASCII.GetString(bytes, 0, bytesRead));
+        //}
+
+
+    }
+    public class LoginViewModel : ViewBase
+    {
+        private string _Username;
+        [Required]
+        [RegularExpression("^[A-Za-z0-9.]*$")]
+        public string Username
         {
-            byte[] bytes = new byte[1024];
-
-            IPHostEntry host = Dns.GetHostEntry("localhost");
-            IPAddress ipAddress = host.AddressList[0];
-            IPAddress ip2 = IPAddress.Parse("127.0.0.1");
-            IPEndPoint remoteEP = new IPEndPoint(ipAddress, 11000);
-
-            byte[] msg = Encoding.ASCII.GetBytes(UserTB.Text + "\t" + "<EOF>");
-
-            var client = new TcpClient(host.AddressList[0].ToString(), portNum);
-
-            NetworkStream ns = client.GetStream();
-            ns.WriteTimeout = 3000;
-            ns.ReadTimeout = 3000;
-            ns.Write(msg, 0, msg.Length);
-
-            Debug.WriteLine("Sent. Awaiting Response.");
-            int bytesRead = ns.Read(bytes, 0, bytes.Length);
-
-            Debug.WriteLine("Response: " + Encoding.ASCII.GetString(bytes, 0, bytesRead));
-
-
-
-
+            get { return _Username; }
+            set
+            {
+                _Username = value;
+                ClearErrors(nameof(Username));
+                ValidateProperty(value);
+                OnPropertyChanged();
+            }
         }
 
+        //private const int portNum = 26606;
+        //private const string hostName = "naqad51.corp.lairdtech.com";
+        private const int portNum = 11000;
+        private const string hostName = "127.0.0.1";
+        const char STX = '\u0002';
+        const char ETX = '\u0003';
+        public TcpClient client;
+
+        //private User _CurrentUser;
+        //public User CurrentUser
+        //{
+        //    get { return _CurrentUser; }
+        //    set { _CurrentUser = value; OnPropertyChanged(); }
+        //}
+
+        private string _Message;
+        public string Message
+        {
+            get { return _Message; }
+            set { _Message = value; OnPropertyChanged(); }
+        }
+
+        public ICommand LoginCommand { get { return LoginCmd; } }
+        public ICommand LoginCmd = null;  // This will be setup to point to a RelayCommand object.
+        public bool CanLogin(object z)
+        {
+            bool LoginEnabled = this.HasErrors == false;
+            if (LoginEnabled == true)
+            {
+                //PreviewMeasFile();
+            }
+            return LoginEnabled;
+        }
+        public void Login(object z)
+        {
+            client = new TcpClient(hostName, portNum);
+            string dbName = "QAD DB";
+
+            if (Username.Length <= 0)
+            {
+                Debug.Print("Username is blank.");
+            }
+
+            string qadprogram = "ttromt02.p";
+            string runoptions = "SetUser" + "\t" + Username + "\t" + (z as PasswordBox).Password + "\t" + "14.13.1";
+            string fullmsgstr = "_RUN_" + STX + qadprogram + ETX + runoptions + "\n";
+
+            byte[] msg = Encoding.ASCII.GetBytes(fullmsgstr);
+
+            if (SendCmd(msg) && CmdResponse == true)
+            {
+                string qadprogram2 = "ttdbname.p";
+                string runoptions2 = Username + "\t" + (z as PasswordBox).Password + "\t" + "14.13.1";
+                string fullmsgstr2 = "_RUN_" + STX + qadprogram2 + STX + runoptions2 + "\n";
+                byte[] msg2 = Encoding.ASCII.GetBytes(fullmsgstr2);
+                SendCmd(msg2);
+                dbName = CmdMessage;
+                Debug.Print("Logged into: " + dbName);
+
+                Thread.Sleep(1000);
+                fullmsgstr2 = "_RUN_" + STX + "ttromt02.p" + STX + "getRoutingData" + "\t" +
+                    "4001" + "\t" + "4001" + "\t" + "11/15/2020" + "\t" + "\t" + "\t" + "\t" + "\t" + "\t" + '\u0010';
+                byte[] msg3 = Encoding.ASCII.GetBytes(fullmsgstr2);
+                try
+                {
+                    SendCmd(msg3);
+                    Thread.Sleep(1000);
+                    string routingresult = TCPresponse;
+
+                    Debug.Print("Routing Result: " + routingresult);
+                    if (routingresult != "")
+                    {
+                        List<Step> steplist = new List<Step>();
+                        String[] split2steps = routingresult.Split('\u0014');
+                        foreach (string eachstep in split2steps)
+                        {
+                            if (eachstep != "" && !eachstep.Contains("\u0003") && !eachstep.Contains("\u0002"))
+                            {
+                                Step steptest = new Step();
+                                steptest.ReadfromQAD(eachstep);
+                                steplist.Add(steptest);
+                                Debug.WriteLine(steptest.Operation);
+                                Debug.WriteLine(steptest.Comments);
+                            }
+                        }
+                        Debug.Print(split2steps.Count().ToString());
+
+                    }
+                    Thread.Sleep(1000);
+                    byte[] quitmsg = Encoding.ASCII.GetBytes("_QUIT_");
+                    SendCmd(quitmsg);
+                }
+                catch
+                {
+                    byte[] quitmsg = Encoding.ASCII.GetBytes("_QUIT_");
+                    SendCmd(quitmsg);
+                }
+            }
+            else
+            {
+                byte[] quitmsg = Encoding.ASCII.GetBytes("_QUIT_");
+                SendCmd(quitmsg);
+                Debug.Print("Can't Login.");
+            }
+
+
+            client.Close();
+        }
+
+
+        bool CmdResponse = false;
+        string CmdMessage = "";
+        string CmdCodes = "";
+        string TCPresponse = "";
+
+        private bool SendCmd(byte[] msg)
+        {
+            bool TCPwriteSuccess = false;
+            TCPresponse = "";
+            CmdResponse = false;
+            CmdMessage = "";
+            CmdCodes = "";
+            bool TCPreadSuccess = false;
+            byte[] bytes = new byte[8192];
+
+
+            if (client.Connected)
+            {
+                NetworkStream ns = client.GetStream();
+                ns.WriteTimeout = 3000;
+                ns.ReadTimeout = 3000;
+                try
+                {
+                    ns.Write(msg, 0, msg.Length);
+                    TCPwriteSuccess = true;
+
+                    if (TCPwriteSuccess == true)
+                    {
+                        Debug.WriteLine("Sent. Awaiting Response.");
+                        Thread.Sleep(200);
+                        // Possible issues: 
+                        // Data is too long
+                        // 200 ms may not be long enough
+                        // Client disconnect
+                        //int bytesRead = ns.Read(bytes, 0, bytes.Length);
+
+                        if (ns.DataAvailable)
+                        {
+                            int bytesRead = ns.Read(bytes, 0, bytes.Length);
+                            Debug.WriteLine("Response: " + Encoding.ASCII.GetString(bytes, 0, bytesRead));
+                            TCPresponse = Encoding.ASCII.GetString(bytes, 0, bytesRead);
+                            if (TCPresponse == "")
+                            {
+                                return false;
+                            }
+                            if (TCPresponse.Contains("\t"))
+                            {
+                                int TabPos = TCPresponse.IndexOf("\t");
+                                if (TCPresponse.Substring(TCPresponse.Length - 1, 1) == "\n")
+                                {
+                                    TCPresponse = TCPresponse.Substring(0, TCPresponse.Length - 1);
+                                }
+                                if (TCPresponse.Contains("true"))
+                                {
+                                    CmdResponse = true;
+                                }
+                                TCPreadSuccess = true;
+                                string vStr = TCPresponse.Substring(TabPos + 1); //from Tab position to end
+                                int vPos = vStr.IndexOf(ETX);
+                                if (vPos > 0)
+                                {
+                                    CmdMessage = vStr.Substring(0, vPos - 1);
+                                    CmdCodes = vStr.Substring(vPos + 1);
+                                }
+                                else
+                                {
+                                    CmdMessage = vStr;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        ns.Close();
+                        return false;
+                    }
+                }
+                catch
+                {
+                    ns.Close();
+                    Debug.Print("Disconnected.");
+                }
+            }
+
+            //client.Close();
+            return TCPreadSuccess;
+        }
+
+        //https://stackoverflow.com/questions/5309988/how-to-get-the-groups-of-a-user-in-active-directory-c-asp-net/61656557#61656557
+        private List<string> GetGroups(string userName)
+        {
+            List<string> result = new List<string>();
+            WindowsIdentity wi = new WindowsIdentity(userName);
+
+            foreach (IdentityReference group in wi.Groups)
+            {
+                try
+                {
+                    result.Add(group.Translate(typeof(NTAccount)).ToString());
+                }
+                catch { }
+            }
+            result.Sort();
+            return result;
+        }
+
+        public void DummyLogin(string Uname, string Pass)
+        {
+            //CurrentUser = new User();
+            CurrentError = "";
+            //AllRoles allRoles = new AllRoles();
+            //if (Uname == "TestEngineer" && Pass == "Test")
+            //{
+            //    Message = "Welcome " + Username;
+            //    CurrentUser.Name = Username;
+            //    CurrentUser.Roles.Add(allRoles.EngRole);
+            //    //PartStepView partStepView = new PartStepView();
+            //    partStepView.Show();
+            //    partStepView.partsViewModel.Roles.Add(allRoles.EngRole);
+            //    partStepView.partsViewModel.Roles.Add(allRoles.OperatorRole);
+            //    partStepView.partsViewModel.CurrentRole = allRoles.EngRole;
+            //    partStepView.partsViewModel.CurrentUser = CurrentUser;
+            //}
+            //if (CurrentUser.Name == null)
+            //{
+            //    CurrentError = "Login Failed.";
+            //}
+        }
+
+        public LoginViewModel()
+        {
+            Username = "";
+            LoginCmd = new RelayCommand(Login, param => this.CanLogin(null));
+        }
 
     }
 
@@ -347,7 +626,7 @@ namespace TCP_WPF_Test
             mstr = mstr + "yes" + "\v" + "L" + MFLD;
             mstr = mstr + "no" + "\v" + "L" + MFLD;
             mstr = mstr + OrigStartDate.ToString() + "\v" + "D" + MFLD;
-            mstr = mstr + '\u0020';
+            mstr = mstr + '\u0014';
             return mstr;
         }
         public void ReadfromQAD(string mstr)
